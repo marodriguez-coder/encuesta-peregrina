@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Estudio de Mercado · Cerveza Peregrina</title>
+<title>Estudio de Mercado &middot; Cerveza Peregrina</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--cream:#FAF7EE;--dark:#1A1A1A;--gold:#C6922A;--muted:#6B6B6B;--border:rgba(26,26,26,0.12);--green:#2C6E49;--honey:#D4900A;--purple:#6B2FA0;--amber:#8B4513}
@@ -75,7 +76,6 @@ select:focus{border-color:var(--gold)}
 <div class="hdr"><span class="brand">Cerveza Peregrina</span><h1>Estudio de Mercado Interno</h1></div>
 <div class="sync-bar" id="syncBar"></div>
 <div class="prog-wrap"><div class="prog-fill" id="prog"></div></div>
-
 <div class="wrap">
 
 <!-- STEP 0 -->
@@ -150,24 +150,23 @@ select:focus{border-color:var(--gold)}
 
 <!-- RESULTS -->
 <div id="res">
-  <div class="ty"><span class="icon">&#10003;</span><h2>Gracias por participar!</h2><p>Tu respuesta fue registrada en Google Sheets y descargada como CSV de respaldo.</p></div>
+  <div class="ty"><span class="icon">&#10003;</span><h2>Gracias por participar!</h2><p>Tu respuesta fue registrada correctamente.</p></div>
   <div id="rc"></div>
   <div class="exp"><button class="btn btn-p" onclick="dlCSV()">Descargar CSV</button><button class="btn btn-g" onclick="cpJSON()">Copiar JSON</button></div>
 </div>
 
-</div><!-- /wrap -->
+</div>
 
 <script>
-const URL_GS = 'https://script.google.com/macros/s/AKfycbyNbOX13MuqY9NTDY0WqWlf_RRsT7u8lyZR9773k7S67-mS4L0gWlKObBFaar6D5xndoQ/exec';
+const SB_URL = 'https://ekaknlwzklrpyigvtnei.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrYWtubHd6a2xycHlpZ3Z0bmVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNzU3NTMsImV4cCI6MjA4OTk1MTc1M30.nn6LQZBLhdQ8rVRQFNNdc1avskXUDXVAAofDoUdU_Ro';
 
-// ── Helpers ───────────────────────────────────────────────────
 function gv(n){
   const el=document.querySelector('[name="'+n+'"]:checked');
   if(el) return el.value;
   if(n==='area') return document.getElementById('qa').value;
   return null;
 }
-
 function showStep(n){
   document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById('s'+n);
@@ -175,7 +174,6 @@ function showStep(n){
   document.getElementById('prog').style.width=(n/5*100)+'%';
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
 function next(s){
   if(s===0){
     if(!gv('age')||!gv('gender')||!gv('freq')||!gv('area'))
@@ -188,52 +186,24 @@ function next(s){
 }
 function prev(s){ showStep(s-1); }
 
-// ── Collect ───────────────────────────────────────────────────
 function collect(){
   const beer=p=>{
     const o={};
     for(let i=1;i<=5;i++) o['q'+i]=parseInt(gv(p+i)||0);
-    o.promedio=(Object.values(o).reduce((a,b)=>a+b,0)/5).toFixed(2);
+    o.promedio=+(Object.values(o).reduce((a,b)=>a+b,0)/5).toFixed(2);
     return o;
   };
   return {
-    timestamp:new Date().toISOString(),
-    age:gv('age'), gender:gv('gender'),
-    freq_consumo:gv('freq'), area:gv('area'),
-    favorita:gv('fav'),
-    german_pilsen:beer('gp'), honey_light:beer('hl'),
-    munich_helles:beer('mh'), vienna_lager:beer('vl')
+    timestamp: new Date().toISOString(),
+    age: gv('age'), gender: gv('gender'),
+    freq_consumo: gv('freq'), area: gv('area'),
+    favorita: gv('fav'),
+    german_pilsen: beer('gp'), honey_light: beer('hl'),
+    munich_helles: beer('mh'), vienna_lager: beer('vl')
   };
 }
 
-// ── Send via JSONP (unica tecnica sin CORS en GAS) ────────────
-function sendJSONP(data, onOk, onFail){
-  const cb='_pCb'+Date.now();
-  const t=setTimeout(()=>{ cleanup(); onFail('timeout'); }, 12000);
-
-  function cleanup(){
-    clearTimeout(t);
-    delete window[cb];
-    const el=document.getElementById(cb);
-    if(el) el.remove();
-  }
-
-  window[cb]=function(res){
-    cleanup();
-    if(res && res.status==='ok') onOk(res);
-    else onFail(res ? res.message : 'error');
-  };
-
-  const payload=encodeURIComponent(JSON.stringify(data));
-  const src=URL_GS+'?callback='+cb+'&payload='+payload;
-  const sc=document.createElement('script');
-  sc.id=cb; sc.src=src;
-  sc.onerror=()=>{ cleanup(); onFail('network error'); };
-  document.body.appendChild(sc);
-}
-
-// ── Submit ────────────────────────────────────────────────────
-function send(){
+async function send(){
   if(!gv('fav')) return alert('Por favor elige tu variedad favorita.');
   for(let i=1;i<=5;i++) if(!gv('vl'+i)) return alert('Por favor responde todas las preguntas.');
 
@@ -245,27 +215,50 @@ function send(){
 
   const bar=document.getElementById('syncBar');
   bar.className='sync-bar pending';
-  bar.textContent='Guardando en Google Sheets...';
+  bar.textContent='Guardando en base de datos...';
 
-  const data=collect();
+  const d=collect();
+  const gp=d.german_pilsen, hl=d.honey_light, mh=d.munich_helles, vl=d.vienna_lager;
 
-  sendJSONP(data,
-    function(res){
+  const row={
+    timestamp: d.timestamp,
+    age: d.age, gender: d.gender,
+    freq_consumo: d.freq_consumo, area: d.area,
+    gp_visual:gp.q1, gp_identif:gp.q2, gp_mensaje:gp.q3, gp_compra:gp.q4, gp_dif:gp.q5, gp_prom:gp.promedio,
+    hl_visual:hl.q1, hl_identif:hl.q2, hl_mensaje:hl.q3, hl_compra:hl.q4, hl_dif:hl.q5, hl_prom:hl.promedio,
+    mh_visual:mh.q1, mh_identif:mh.q2, mh_concepto:mh.q3, mh_compra:mh.q4, mh_dif:mh.q5, mh_prom:mh.promedio,
+    vl_visual:vl.q1, vl_identif:vl.q2, vl_premium:vl.q3, vl_compra:vl.q4, vl_dif:vl.q5, vl_prom:vl.promedio,
+    favorita: d.favorita
+  };
+
+  try {
+    const resp = await fetch(SB_URL+'/rest/v1/respuestas', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer '+SB_KEY,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(row)
+    });
+
+    if(resp.ok || resp.status===201) {
       bar.className='sync-bar ok';
-      bar.textContent='Guardado en Google Sheets (fila '+res.row+') ✓';
-    },
-    function(err){
+      bar.textContent='Guardado correctamente en Supabase ✓';
+    } else {
+      const err=await resp.text();
       bar.className='sync-bar fail';
-      bar.textContent='No se pudo guardar en Sheets. Descarga el CSV como respaldo.';
-      console.error('Sheets error:', err);
+      bar.textContent='Error al guardar: '+err;
+      console.error('Supabase error:', resp.status, err);
     }
-  );
-
-  // CSV siempre se descarga como respaldo
-  setTimeout(dlCSV, 800);
+  } catch(e) {
+    bar.className='sync-bar fail';
+    bar.textContent='Error de red. Descarga el CSV como respaldo.';
+    console.error(e);
+  }
 }
 
-// ── Render results ────────────────────────────────────────────
 function renderResults(){
   const d=collect();
   const beers=[
@@ -283,13 +276,11 @@ function renderResults(){
   beers.forEach(b=>{
     const beer=d[b.k];
     h+='<div class="rs" style="border-color:'+b.c+'"><h3>'+b.l+' <span style="color:'+b.c+';font-size:.8rem;margin-left:6px">Prom: '+beer.promedio+'/5</span></h3>'
-      +b.qs.map((q,i)=>'<div class="rrow"><span>'+q+'</span><span class="rscore">'+beer['q'+(i+1)]+'/5</span></div>').join('')
-      +'</div>';
+      +b.qs.map((q,i)=>'<div class="rrow"><span>'+q+'</span><span class="rscore">'+beer['q'+(i+1)]+'/5</span></div>').join('')+'</div>';
   });
   document.getElementById('rc').innerHTML=h;
 }
 
-// ── CSV / JSON ────────────────────────────────────────────────
 function dlCSV(){
   const d=collect();
   const h='timestamp,age,gender,freq_consumo,area,gp_visual,gp_identif,gp_mensaje,gp_compra,gp_dif,gp_prom,hl_visual,hl_identif,hl_mensaje,hl_compra,hl_dif,hl_prom,mh_visual,mh_identif,mh_concepto,mh_compra,mh_dif,mh_prom,vl_visual,vl_identif,vl_premium,vl_compra,vl_dif,vl_prom,favorita';
@@ -298,7 +289,7 @@ function dlCSV(){
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(h+'\n'+r);
   a.download='peregrina_'+Date.now()+'.csv';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 function cpJSON(){
   navigator.clipboard.writeText(JSON.stringify(collect(),null,2)).then(()=>alert('JSON copiado'));
